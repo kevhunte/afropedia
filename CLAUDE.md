@@ -189,6 +189,49 @@ import type { Article } from '@afropedia/shared';      // → packages/shared/sr
 
 ---
 
+## Development Workflow
+
+Every piece of feature work follows this pattern to keep `main` a clean, linear, commit-per-feature history.
+
+### Starting a feature
+
+```bash
+git checkout main && git pull
+git checkout -b feat/<slug>
+```
+
+### During development
+
+Commit freely on the feature branch — WIP commits are fine here.
+
+### Before merging
+
+Squash all feature-branch commits down to **one polished commit**:
+
+```bash
+git rebase -i origin/main   # mark all but the first as 'squash' or 's'
+```
+
+Write a conventional-commit message for the squashed commit (e.g. `feat: add timeline page with paginated events`).
+
+### Merging into main
+
+```bash
+git checkout main
+git merge --ff-only feat/<slug>
+git branch -d feat/<slug>
+```
+
+Use `--ff-only` to guarantee a linear history. If the rebase was done correctly, this will never fail.
+
+### Why squash + ff-only?
+
+- Each commit on `main` represents one complete, working feature
+- `git log` on `main` reads like a changelog
+- Bisect and revert operate on meaningful units, not WIP snapshots
+
+---
+
 ## Deployment (Railway / Docker)
 
 Two separate Railway services, both built from the same repo root:

@@ -59,3 +59,40 @@ export interface CreateArticleDto {
   content: string;
   tags?: string[];
 }
+
+// ─── Timeline ─────────────────────────────────────────────────────────────────
+
+export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
+
+export interface TimelineEventContent {
+  beginner: string;
+  intermediate: string;
+  advanced: string;
+}
+
+export interface TimelineEventReference {
+  title: string;
+  url?: string;
+  type: 'book' | 'article' | 'documentary' | 'website' | 'journal';
+  author?: string;
+}
+
+export interface TimelineEvent {
+  id: string;
+  year: number;
+  endYear?: number;
+  title: string;
+  region: string;
+  category: string;
+  summary: string;
+  content: TimelineEventContent;
+  references: TimelineEventReference[];
+  imageUrl?: string;
+}
+
+export interface TimelineQuery extends PaginationQuery {
+  startYear?: number;
+  endYear?: number;
+  category?: string;
+  region?: string;
+}

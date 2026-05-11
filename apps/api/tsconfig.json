@@ -7,10 +7,8 @@
     "baseUrl": "./",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "incremental": true,
-    "paths": {
-      "@afropedia/shared": ["../../packages/shared/src/index.ts"]
-    }
+    "rootDir": "src",
+    "paths": {}
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
