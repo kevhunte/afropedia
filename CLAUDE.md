@@ -189,11 +189,43 @@ import type { Article } from '@afropedia/shared';      // → packages/shared/sr
 
 ---
 
+## Deployment (Railway / Docker)
+
+Two separate Railway services, both built from the same repo root:
+
+| Service | Dockerfile | Root dir | Port |
+|---------|------------|----------|------|
+| `afropedia-web` | `Dockerfile.web` | `/` (repo root) | 3000 |
+| `afropedia-api` | `Dockerfile.api` | `/` (repo root) | 3001 |
+
+**Why repo root as the build context?** Both apps depend on `packages/shared`. Pointing Railway's root dir at `apps/web` would exclude `packages/shared` from the build context. Using Dockerfiles at the root with explicit `COPY` instructions is the correct pattern for monorepos.
+
+### Next.js standalone output
+`next.config.ts` sets `output: 'standalone'`. The build produces `.next/standalone/` — a self-contained server with only the required `node_modules`. The runner stage copies:
+- `.next/standalone` → the minimal server
+- `.next/static` → JS/CSS chunks (must be co-located with the server)
+
+### Railway environment variables to set
+**`afropedia-web`:**
+```
+NEXT_PUBLIC_API_URL=https://<your-api-service>.railway.app/api
+```
+
+**`afropedia-api`:**
+```
+PORT=3001
+FRONTEND_URL=https://<your-web-service>.railway.app
+DATABASE_URL=<from Railway Postgres plugin>
+NODE_ENV=production
+```
+
+---
+
 ## Known Gaps (not yet added)
 
 - Database integration (Prisma or TypeORM — decide when first entity is needed)
 - Authentication (JWT / NextAuth — decide based on requirements)
-- Deployment config (Docker, CI/CD pipeline)
+- CI/CD pipeline (GitHub Actions for test + lint before deploy)
 - Tailwind CSS (add to `apps/web` when UI work begins)
 - Turborepo (add when build times become a pain point)
 - Root-level ESLint / Prettier config

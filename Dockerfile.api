@@ -1,0 +1,43 @@
+# ── Stage 1: install dependencies ────────────────────────────────────────────
+FROM node:20-alpine AS deps
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY apps/api/package.json ./apps/api/package.json
+
+RUN npm ci
+
+# ── Stage 2: build ────────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+
+COPY tsconfig.base.json package.json ./
+COPY packages/shared ./packages/shared
+COPY apps/api ./apps/api
+
+RUN npm run build --workspace=packages/shared
+RUN npm run build --workspace=apps/api
+
+# ── Stage 3: production runner ────────────────────────────────────────────────
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3001
+
+# Re-install production-only deps so workspace symlinks are recreated
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY apps/api/package.json ./apps/api/package.json
+RUN npm ci --omit=dev
+
+# Copy compiled output — shared dist must be present for the workspace symlink to resolve
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+
+EXPOSE 3001
+
+CMD ["node", "apps/api/dist/main"]
