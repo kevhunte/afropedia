@@ -3,6 +3,8 @@ import { api } from '@/lib/api';
 import { TimelineList } from '@/components/TimelineList';
 import './timeline.css';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Timeline — Afropedia',
   description:
