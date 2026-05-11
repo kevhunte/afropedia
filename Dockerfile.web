@@ -2,8 +2,6 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Copy manifests for all workspaces needed by the web app.
-# This layer is cached until any package.json / lockfile changes.
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json ./packages/shared/package.json
 COPY apps/web/package.json ./apps/web/package.json
@@ -14,10 +12,14 @@ RUN npm ci
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Bring in installed node_modules (includes workspace symlinks)
+# Declare build-time variable — Railway passes it from the service variable of
+# the same name. NEXT_PUBLIC_* vars must be present during `next build` or they
+# get compiled as undefined into the browser bundle.
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy source — shared must land before web so workspace symlink resolves
 COPY tsconfig.base.json package.json ./
 COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
@@ -26,21 +28,16 @@ RUN npm run build --workspace=packages/shared
 RUN npm run build --workspace=apps/web
 
 # ── Stage 3: production runner ────────────────────────────────────────────────
-# next build --output standalone produces a self-contained server in .next/standalone
 FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Standalone output bundles only what the server needs at runtime
 COPY --from=builder /app/apps/web/.next/standalone ./
-# Static assets must sit next to the standalone server
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
-# Uncomment when a public/ directory exists:
 # COPY --from=builder /app/apps/web/public ./apps/web/public
 
 EXPOSE 3000
 
-# In a monorepo standalone build, the server lands at apps/web/server.js
 CMD ["node", "apps/web/server.js"]
